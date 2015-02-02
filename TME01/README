@@ -1,0 +1,65 @@
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538
+
+== Fichiers inclus ==
+
+   EXO_2 :
+   -> src/hello_world.c : un premier programme MPI où chaque processus affiche : "Processus <rank> sur <nb_process_total> : Hello MPI"
+
+   EXO_3 :
+   -> src/exo3_fournis.c : code fournis avec l'exo, pour la question 2
+   -> src/exo3_edited.c : code modifié pour la question 3
+
+   EXO_4 :
+   -> src/hello_neighbor.c : Chaque process envoie une chaîne à son successeur , puis reçoit un message de son prédécesseur et l'affiche ensuite.
+   -> src/hello_neighbor_2.c : On remplace cette fois Send par Ssend
+   -> src/hello_neighbor_3.c : Code précédent, en évitant la famine.
+
+   EXO_5 :
+   ->include/mpi_server.h : fichier fournis
+   -> src/mpi_server.c : implémentation du header donné.
+
+== Directives de 'makefile' ==
+
+   all : cree tous les executables, sans les éxecuter.
+
+   hello_world : produit l'executable hello_world 
+   runexo2 : compile + exec l'exo2 avec 5 process
+
+   exo3_fournis : produit l'exec bin/exo3_fournis
+   exo3_edited : produit l'exec bin/exo3_edited
+
+   hello_neighbor : produit l'exec bin/hello_neighbor
+   hello_neighbor_2 : produit l'exec bin/hello_neighbor_2
+   hello_neighbor_3 : produit l'exec bin/hello_neighbor_3
+
+   directories : création des répertoires temporaires s'ils n'existent pas déjà
+   clean : Suppression de tous les fichiers binaires, objet et bibliothèques.
+   cleanall : Suppression des répertoires et fichiers temporaires
+
+== Etat d'avancement ==
+
+   EXO 2 : Hello World - OK
+   EXO 3 : Hello Master - OK
+   EXO 4 : Hello Neighbor - OK
+   EXO 5 : Serveur MPI - OK
+
+== Réponses ==
+
+   EXO_3 :
+   
+   --> Question 1 :
+       - Initialize l'MPI et récupère la taille et le rang du process en cours :
+       -- si ce n'est pas le master ( rang != 0 ), il va send le message au master.
+       -- sinon si c'est le master ( rang == 0 ), il se mettre en attente de réception de tous les messages des autres process ( par ordre de rangs ) et les afficher à chaque fois.
+
+   --> Question 2 : On remarque que les affichages sont toujours dans l'ordre croissant des rangs des processus. ( master exclus )
+
+   --> Question 3 : l'ordre des process à la reception n'est plus respecté, ce qui est logique vu que MPI_ANY_SOURCE permet de recevoir un message dont on ne connait pas l'émetteur, alors qu'avant on attendait des messages d'émetteurs précis et dont le rang est croissant grace à la variable "source".
+
+   EXO_4 :
+   
+   --> Question 2 : Le programme ne se termine pas pour cause d'interblocage, vu que l'émission est synchrone bloquante, le Ssend ne se termine pas avant la réception et du coup tous les Ssend se mettent en attente.
+
+   --> Question 3 : Il suffit que l'un des process ne fasse pas comme les autres, et commence par un Recv avant Ssend ( process 0 dans mon code )
