@@ -1,0 +1,46 @@
+TP02 - Implantation sous MPI d'horloges de Lamport
+
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538 - <toumlilt.ilyas@gmail.com>
+
+== Fichiers inclus ==
+
+   EXO_1 :
+   -> src/philosophers_diner.c : simulation d'un diner de philosophes en openMPI, ce programme nécessite une augmentation de la mémoire allouée au process ( commade sh/bash : ulimit )
+
+== Directives de 'makefile' ==
+
+   all : cree tous les executables, sans les éxecuter.
+
+   philosophers_diner : cc + ld l'exo 1 
+
+   directories : création des répertoires temporaires s'ils n'existent pas déjà
+   clean : Suppression de tous les fichiers binaires, objet et bibliothèques.
+   cleanall : Suppression des répertoires et fichiers temporaires
+
+== Etat d'avancement ==
+
+   EXO 1 : Diner de philosophes : version sans serveur - OK
+       	   	    		: version avec serveur - ...
+
+== Réponses ==
+
+   EXO_1 :
+   
+   --> Question 1 :
+     - Messages : ( les tags en MPI )
+       - WANNA_CHOPSTICK : donnes moi la baguette
+       - CHOPSTICK_YOURS : tiens la voilà
+     - Variables :
+       - bag_X avec X C {G,D} : boolean, j'ai la baguette / j'ai pas la baguette
+     - Distinguer les deux cas :
+       - La baguette est libre et j'ai faim
+       - La baguette est dispo et j'ai pas faim
+
+   --> Question 2 :
+     - Interblocage au moment où tout le monde veut les baguettes
+
+   --> Question 3 :
+     - Lorsqu'il a terminé ses repas, mais aussi lorsque ses voisins ont aussi fini de manger, car s'il se termine avant il ne pourra pas leur filer les baguettes.
+     -> Message suplémentaire : DONE_EATING : j'ai fini !
