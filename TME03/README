@@ -1,0 +1,34 @@
+TP03 - Minimum sur un arbre et echo avec MPI
+
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538 - <toumlilt.ilyas@gmail.com>
+
+== Fichiers inclus ==
+
+   EXO_1 :
+   -> src/min_abr.c : implémentation de l'algorithme de l'arbre pour 
+      		      un calcul du minimum
+   EXO_2 :
+   -> src/min_echo.c : implémentation de l'algorithme de l'echo pour
+      		       un calcul de minimum 
+
+== Directives de 'makefile' ==
+
+   all : cree tous les executables, sans les éxecuter.
+
+   min_abr : cc + ld + exec l'exo 1
+   min_echo : cc + ld + exec l'exo 2 
+
+   directories : création des répertoires temporaires s'ils n'existent pas déjà
+   clean : Suppression de tous les fichiers binaires, objet et bibliothèques.
+   cleanall : Suppression des répertoires et fichiers temporaires
+
+== Etat d'avancement ==
+
+   EXO 1 : Algorithme de l'arbre - OK
+   EXO 2 : Algorithme de l'echo - OK
+
+== Réponses ==
+
+  
