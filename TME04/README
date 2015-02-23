@@ -1,0 +1,36 @@
+TP04 - Algorithme Phase
+
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538 - <toumlilt.ilyas@gmail.com>
+
+== Fichiers inclus ==
+
+   EXO_1 :
+   -> src/min_phase.c : implémentation de l'algorithme Phase pour 
+      		      un calcul du minimum.
+		      - Les fonctions main et simulateur sont fournis avec le 
+		        tme, j'ai modifié le simulateur pour qu'il choisisse 
+			aléatoirement un initiateur, et pour qu'il attende les 
+			décisions.
+ 		      - Les décisions sont simplement envoyées au process 0 qui 
+		        les affiche.
+
+== Directives de 'makefile' ==
+
+   all : cree tous les executables, sans les éxecuter.
+
+   min_phase : crée l'executable bin/min_phase et l'execute.
+
+   directories : création des répertoires temporaires s'ils n'existent pas déjà
+   clean : Suppression de tous les fichiers binaires, objet et bibliothèques.
+   cleanall : Suppression des répertoires et fichiers temporaires
+
+== Etat d'avancement ==
+
+   EXO 1 : Algorithme Phase - OK
+
+== Réponses ==
+
+== Soumission ==
+   mail to: <swan.dubois@lip6.fr> , avant dimanche soir
