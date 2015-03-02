@@ -1,0 +1,31 @@
+TP05 - Implantation sous MPI de l'algo de Ricart & Agrawala
+Version 1.0
+
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538 - <toumlilt.ilyas@gmail.com>
+
+== Fichiers inclus ==
+
+   EXO_1+2 :
+   -> src/ricart_agrawala.c : 
+
+== Directives de 'makefile' ==
+
+   all : cree tous les executables, sans les éxecuter.
+
+   ricart_agrawala : cc + ld le prog
+
+   directories : création des répertoires temporaires s'ils n'existent pas déjà
+   clean : Suppression de tous les fichiers binaires, objet et bibliothèques.
+   cleanall : Suppression des répertoires et fichiers temporaires
+
+== Etat d'avancement ==
+
+   EXO 1 : RA - OK
+   EXO 2 : RA avec terminaison - OK
+
+== Réponses ==
+
+== Soumission ==
+   mail to: <swan.dubois@lip6.fr> , avant dimanche soir
