@@ -1,0 +1,29 @@
+TP06 - Implantation sous SPIN de l'algorithme de Naimi et Trahel
+Version 1.0
+
+== Participants : 1 ==
+
+   TOUMLILT Ilyas - 3261538 - <toumlilt.ilyas@gmail.com>
+
+== Fichiers inclus ==
+
+   EXO_1+2+3 :
+   -> src/naimi.pml : 
+
+== Directives de 'makefile' ==
+
+   naimi-spin : vérifie la syntaxe de src/naimi.pml
+   naimi-ispin: lance src/naimi.pml sous ispin.
+   	  	( vérifier la syntaxe avec naimi-spin avant )
+
+
+== Etat d'avancement ==
+
+   EXO 1 : Implementation de l'algo - OK
+   EXO 2 : Vérification de CS       - OK
+   EXO 3 : Vérification avec LTL    - OK
+
+== Réponses ==
+
+== Soumission ==
+   none.
