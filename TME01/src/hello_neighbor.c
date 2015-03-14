@@ -4,7 +4,7 @@
  * @author Ilyas Toumlilt <toumlilt.ilyas@gmail.com>
  * @copyright (c) 2015, toumlilt
  *
- * @version 1.0
+ * @version 1.1
  * @package toumlilt/M1/AR
  */
 
@@ -30,7 +30,8 @@ int main(int argc, char** argv)
 
   MPI_Send(msg, strlen(msg)+1, MPI_CHAR, (rank + 1) % size, tag, MPI_COMM_WORLD);
 
-  MPI_Recv(msg, MSG_SIZE, MPI_CHAR, (rank - 1) % size, tag, MPI_COMM_WORLD, &status);
+  MPI_Recv(msg, MSG_SIZE, MPI_CHAR, (rank + size - 1) % size,
+	   tag, MPI_COMM_WORLD, &status);
 
   printf("%d received : %s\n", rank, msg);
 

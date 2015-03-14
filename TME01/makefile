@@ -3,7 +3,7 @@
 # @author Ilyas Toumlilt <toumlilt.ilyas@gmail.com>
 # @copyright (c) 2015, toumlilt
 #
-# @version 1.0
+# @version 1.1
 # @package toumlilt/M1/AR
 
 CC=gcc -Wall -ansi
@@ -14,7 +14,7 @@ OBJ=obj
 SRC=src
 
 
-all: directories hello_world
+all: directories hello_world exo3_fournis exo3_edited hello_neighbor hello_neighbor_2 hello_neighbor_3
 
 
 directories: ${OBJ} ${BIN} ${LIB}

@@ -1,3 +1,6 @@
+TP01 - Initiation à MPI avec openMPI
+version 1.1
+
 == Participants : 1 ==
 
    TOUMLILT Ilyas - 3261538
@@ -40,10 +43,10 @@
 
 == Etat d'avancement ==
 
-   EXO 2 : Hello World - OK
-   EXO 3 : Hello Master - OK
+   EXO 2 : Hello World    - OK
+   EXO 3 : Hello Master   - OK
    EXO 4 : Hello Neighbor - OK
-   EXO 5 : Serveur MPI - OK
+   EXO 5 : Serveur MPI    - Work in progress @todo
 
 == Réponses ==
 
