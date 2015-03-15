@@ -1,10 +1,13 @@
 /**
- * TP03 - EXO_02 - l'algorithme de l'echo
+ * TP03 - EXO_02 - l'algorithme de l'echo pour calcul de min
+ * Les fonctions main et simulateur sont fournies avec l'énoncé
+ * j'ai modifié le simulateur pour choisir aléatoirement un initiateur
+ * et pour traiter la décision ( print )
  *
  * @author Ilyas Toumlilt <toumlilt.ilyas@gmail.com>
  * @copyright (c) 2015, toumlilt
  *
- * @version 1.2
+ * @version 1.3
  * @package toumlilt/M1/AR
  */
 

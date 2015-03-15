@@ -1,10 +1,12 @@
 /**
  * TP03 - EXO_01 - Calcul de minimum sur un arbre
+ * Les fonctions main et simulateur sont fournies avec l'énoncé
+ * j'ai modifié le simulateur pour gérer la décision.
  *
  * @author Ilyas Toumlilt <toumlilt.ilyas@gmail.com>
  * @copyright (c) 2015, toumlilt
  *
- * @version 1.2
+ * @version 1.3
  * @package toumlilt/M1/AR
  */
 
