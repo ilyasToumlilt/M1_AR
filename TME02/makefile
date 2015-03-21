@@ -41,8 +41,6 @@ philosophers_diner: $(BIN)/philosophers_diner
 # with server
 # comming soon
 
-
-
 clean:
 	rm -f ${OBJ}/* ${BIN}/* ${LIB}/*
 

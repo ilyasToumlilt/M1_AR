@@ -1,12 +1,10 @@
 /**
  * TP02 - EXO_01 - Diner des philosophes
- * Ce programme necessite une augmentation de la memoire allouee aux process
- * ( commande sh/bash : ulimit )
  *
  * @author Ilyas Toumlilt <toumlilt.ilyas@gmail.com>
  * @copyright (c) 2015, toumlilt
  *
- * @version 1.0
+ * @version 1.1
  * @package toumlilt/M1/AR
  */
 
@@ -38,9 +36,7 @@ void iEat();
 void wannaLeave();
 void iLeave();
 void updateState();
-void* leftChopstikHandler(void* args);
-void* rightChopstikHandler(void* args);
-void handleMessage(int neighbor, int* flag);
+void* messageHandler(void* args);
 
 /*******************************************************************************
  * Local Implementation
@@ -52,27 +48,28 @@ struct _philosopher {
   int state;      /* état du philo */
 } p;
 
-int left_flag;
-pthread_t left_chopstik;
+/* flags de possession des baguettes : */
+int left_flag;  /* 1: je possède la baguette gauche, 0: sinon */ 
+int right_flag; /* 2: je possède la baguette droite, 0: sinon */
 
-int right_flag;
-pthread_t right_chopstick;
+/* parfois, quand j'ai fini de manger, je dois faire tourner la baguette */
+int at_left;  /* 1 ou 0, selon si le voisin gauche attend ou pas la baguette */
+int at_right; /* 1 ou 0, selon si le voisin droit attend la baguette ou pas */
 
+/* thread de traitement des messages reçus et variables de synchro */
+pthread_t msg_handler;
 pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  state_cond  = PTHREAD_COND_INITIALIZER;
 
-/* debug */
-char m_buff[128];
-char l_buff[128];
-char r_buff[128];
-pthread_mutex_t d_m = PTHREAD_MUTEX_INITIALIZER;
+int left_neighbor;  /* id du voisins gauche */
+int right_neighbor; /* id du voisins droit  */
+
+int left_finished;  /* 1: le voisin gauche a fini de manger, 0: sinon */
+int right_finished; /* 1: le voisin droit a fini de manger , 0: sinon */
 
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
-
-  /* récupération du nb de process total : nb des philosophes */
-  MPI_Comm_size(MPI_COMM_WORLD, &(p.nb_philos));
 
   /* init */
   init_philosopher();
@@ -88,40 +85,55 @@ int main(int argc, char** argv)
   iLeave();
 
   MPI_Finalize();
-
-  return EXIT_SUCCESS;
+  return 0;
 }
 
 void init_philosopher()
 {
-  /* récupération de l'id */
+  /* récupération du nb de process total : nb des philosophes */
+  MPI_Comm_size(MPI_COMM_WORLD, &(p.nb_philos));
+  
+  /* récupération de l'id du process courant */
   MPI_Comm_rank(MPI_COMM_WORLD, &(p.id));
   
   /* initialement le philosophe va penser */
   p.state = THINKING;
 
-  /* initialement je n'ai pas de baguette en main */
-  left_flag = right_flag = 0;
+  /* initialement je possède la baguette dont je suis prioritaire */
+  left_flag = ( p.id ) ? 1 : 0;
+  right_flag = ( p.id == p.nb_philos - 1 ) ? 1 : 0;
 
-  /* init des deux threads de gestion des baguettes */
-  pthread_create(&left_chopstik, NULL, leftChopstikHandler, NULL);
-  pthread_create(&right_chopstick, NULL, rightChopstikHandler, NULL);
+  /* initialement je ne suis pas encore dérangé */
+  at_left = at_right = 0;
+
+  /* init du thread traitement des messages reçus */
+  pthread_create(&msg_handler, NULL, messageHandler, NULL);
+
+  /* ids des voisins ( pour pas les retaper à chaque fois ) */
+  left_neighbor  = ( p.id - 1 + p.nb_philos ) % p.nb_philos;
+  right_neighbor = ( p.id + 1 ) % p.nb_philos;
+
+  /* initialement mes voisins n'ont pas encore fini */
+  left_finished = right_finished = 0;
 
   #ifdef VERBOSE
   printf("DEBUG: PHILO_%d initialized, neighbors: (%d,%d)\n", p.id,
-	 ((p.id - 1) + p.nb_philos) % p.nb_philos,
-	 (p.id + 1) % p.nb_philos);
+	 left_neighbor, right_neighbor);
   #endif
 }
 
 void iThink()
 {
-  int max_duration = 5; /* nombre de secondes max d'une reflexion */
+  int max_duration = 5; /* durée max en secondes d'une reflexion */
   srand(p.id);
   int duration = (rand() % max_duration) + 1;
 
+  #ifdef VERBOSE
+  printf("DEBUG: Process %d will think for %d sec\n", p.id, duration);
+  #endif
+  
   sleep(duration);
-
+  
   /* après avoir pensé, le philo aura systématiquement faim */
   updateState(HUNGRY);
 }
@@ -129,64 +141,94 @@ void iThink()
 void wannaEat()
 {
   /* les messages seront sous forme d'entiers */
-  int buf = WANNA_CHOPSTIK;
+  int buf = 0;
   
   /* demande asynchrone des deux baguettes */
-  MPI_Send(&buf, 1, MPI_INT, ((p.id - 1) + p.nb_philos) % p.nb_philos,
-	   WANNA_CHOPSTIK, MPI_COMM_WORLD);
-  MPI_Send(&buf, 1, MPI_INT, (p.id + 1) % p.nb_philos,
-	   WANNA_CHOPSTIK, MPI_COMM_WORLD);
-
   pthread_mutex_lock(&state_mutex);
-  while( !right_flag || !left_flag ){
+  if( !left_flag )
+    MPI_Send(&buf, 1, MPI_INT, left_neighbor, WANNA_CHOPSTIK, MPI_COMM_WORLD);
+  if( !right_flag )
+    MPI_Send(&buf, 1, MPI_INT, right_neighbor, WANNA_CHOPSTIK, MPI_COMM_WORLD);
+
+  /* attente d'accord */
+  while( !left_flag || !right_flag ){
     pthread_cond_wait(&state_cond, &state_mutex);
   }
-  right_flag = left_flag = 0;
-  pthread_mutex_unlock(&state_mutex);
 
   /* yes je peux manger */
-  updateState(EATING);
+  p.state = EATING;
+
+  pthread_mutex_unlock(&state_mutex);
 }
 
 void iEat()
 {
+  #ifdef VERBOSE
+  printf("DEBUG: Process %d will take 2secs to eat\n", p.id);
+  #endif
+
   sleep(2);
 
-  int buf = CHOPSTIK_YOURS;
-  MPI_Send(&buf, 1, MPI_INT, ((p.id - 1) + p.nb_philos) % p.nb_philos,
-	   CHOPSTIK_YOURS, MPI_COMM_WORLD);
-  MPI_Send(&buf, 1, MPI_INT, (p.id + 1) % p.nb_philos,
-	   CHOPSTIK_YOURS, MPI_COMM_WORLD);
+  /* Je suis gentil je rends les baguettes ( s'ils ont en besoin ) */
+  pthread_mutex_lock(&state_mutex);
+  int buf = 0; /* je ne veux pas qu'ils me les retournent */
+  if( at_left ){
+    MPI_Send(&buf, 1, MPI_INT, left_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
+    at_left = 0;
+    left_flag = 0;
+  }
+  if( at_right ){
+    MPI_Send(&buf, 1, MPI_INT, right_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
+    at_right = 0;
+    right_flag = 0;
+  }
+  pthread_mutex_unlock(&state_mutex);
   
   updateState(THINKING);
 }
 
 void wannaLeave()
 {
+  #ifdef VERBOSE
+  printf("DEBUG: Process %d wanna leave !\n", p.id);
+  #endif
+  
   /* messages sous forme d'entiers encore */
-  int buf = DONE_EATING;
+  int buf = 0;
   MPI_Status status;
+
+  /* je n'ai plus besoin des baguettes dont j'avais possession */
+  pthread_mutex_lock(&state_mutex);
+  if( !left_finished && left_flag ){
+    MPI_Send(&buf, 1, MPI_INT, left_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
+    left_flag = 0;
+  }
+  if( !right_finished && right_flag ){
+    MPI_Send(&buf, 1, MPI_INT, right_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
+    right_flag = 0;
+  }
   
   /* le philo commence par avertir ses voisins qu'il a fini de manger 
-     Remarque, le tag utilisé pour les départs est différent */
-  MPI_Send(&buf, 1, MPI_INT, ((p.id - 1) + p.nb_philos) % p.nb_philos,
-	   DONE_EATING, MPI_COMM_WORLD);
-  MPI_Send(&buf, 1, MPI_INT, (p.id + 1) % p.nb_philos,
-	   DONE_EATING, MPI_COMM_WORLD);
-
+     Remarque, le tag utilisé est différent */
+  MPI_Send(&buf, 1, MPI_INT, left_neighbor, DONE_EATING, MPI_COMM_WORLD);
+  MPI_Send(&buf, 1, MPI_INT, right_neighbor, DONE_EATING, MPI_COMM_WORLD);
+  
   /* il doit ensuite attendre que ses voisins se soient terminés */
-  MPI_Recv(&buf, 1, MPI_INT, ((p.id - 1 ) + p.nb_philos) % p.nb_philos,
-	   DONE_EATING, MPI_COMM_WORLD, &status);
-  MPI_Recv(&buf, 1, MPI_INT, (p.id + 1) % p.nb_philos,
-	   DONE_EATING, MPI_COMM_WORLD, &status);
+  while( !left_finished || !right_finished )
+    pthread_cond_wait(&state_cond, &state_mutex);
+  
+  pthread_mutex_unlock(&state_mutex);
 }
 
 void iLeave()
 {
+  #ifdef VERBOSE
+  printf("DEBUG: Process %d, i'm leaving baby !\n", p.id);
+  #endif
+  
   /* je range quand même mes affaires avant de partir */
-  pthread_cancel(left_chopstik);
-  pthread_cancel(right_chopstick);
-
+  pthread_cancel(msg_handler);
+  sleep(1);
 }
 
 void updateState(int newState)
@@ -202,70 +244,68 @@ void updateState(int newState)
  * Partie relative au thread de traitement des messages recus
  ******************************************************************************/
 
-/**
- * Ce gars s'occupe de la baguette gauche
- * et ne communiquera donc qu'avec le voisin gauche
- */
-void* leftChopstikHandler(void* args)
+void* messageHandler(void* args)
 {
-  int neighbor = ((p.id - 1) + p.nb_philos) % p.nb_philos;
-
-  while(1){
-    handleMessage(neighbor, &left_flag);
-  }
-}
-
-/**
- * Ce gars s'occupe de la baguette droite
- * et ne communiquera donc qu'avec le voisin droite
- */
-void* rightChopstikHandler(void* args)
-{
-  int neighbor = (p.id + 1) % p.nb_philos;
-
-  while(1){
-    handleMessage(neighbor, &right_flag);
-  }
-}
-
-void handleMessage(int neighbor, int* flag)
-{
-  int buf = CHOPSTIK_YOURS;
   MPI_Status status;
+  int buf;
 
-  MPI_Recv(&buf, 1, MPI_INT, neighbor, MPI_ANY_TAG, 
-	   MPI_COMM_WORLD, &status);
-
-  pthread_mutex_lock(&state_mutex);
-
-  if( status.MPI_TAG == WANNA_CHOPSTIK ){
-    /* non ducon */
-  
-    /* laisse moi d'abord finir de manger après on parlera */
-    while( p.state == EATING ){
-      pthread_cond_wait(&state_cond, &state_mutex);
-    }
-
-    /* si j'ai faim et que je suis plus fort que le gars, je me sers d'abord */
-    if( p.state == HUNGRY && p.id > neighbor ){
-      *flag = 1;
-      pthread_cond_broadcast(&state_cond);
-      while ( p.state != THINKING ) {
+  while(1){
+    MPI_Recv(&buf, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, 
+	     MPI_COMM_WORLD, &status);
+    
+    pthread_mutex_lock(&state_mutex);
+    
+    if( status.MPI_TAG == WANNA_CHOPSTIK ){
+      /* non ducon */
+      
+      /* laisses moi d'abord finir de manger après on verra */
+      while( p.state == EATING ){
 	pthread_cond_wait(&state_cond, &state_mutex);
       }
+      
+      /* si j'ai faim et que je suis plus fort que le gars, je me sers d'abord */
+      if( p.state == HUNGRY && p.id > status.MPI_SOURCE){
+	if( status.MPI_SOURCE ){
+	  at_left = 1;
+	  left_flag = 1;
+	} else { 
+	  at_right = 1;
+	  right_flag = 0;
+	}
+	pthread_cond_broadcast(&state_cond);
+      } else {
+	if( ( status.MPI_SOURCE == p.id + 1 ) ||
+	    ( p.id == p.nb_philos - 1 && !status.MPI_SOURCE ) ){
+	  right_flag = 0;
+	} else {
+	  left_flag = 0;
+	}
+	buf = ( p.state == HUNGRY ) ? 1 : 0;
+	MPI_Send(&buf, 1, MPI_INT, status.MPI_SOURCE, CHOPSTIK_YOURS,
+		 MPI_COMM_WORLD);
+      }
     }
-    *flag = 0;
-    MPI_Send(&buf, 1, MPI_INT, neighbor, CHOPSTIK_YOURS,
-	     MPI_COMM_WORLD);
-  } else {
-    /* est-ce que j'en avais vraiment besoin ? */
-    if( p.state == HUNGRY ){
-      *flag = 1;
+    else if ( status.MPI_TAG == CHOPSTIK_YOURS ) {
+      if( ( status.MPI_SOURCE == p.id + 1 ) ||
+	  ( p.id == p.nb_philos - 1 && !status.MPI_SOURCE ) ){
+	right_flag = 1;
+	at_right = buf;
+      } else {
+	left_flag = 1;
+	at_left = buf;
+      }
       pthread_cond_broadcast(&state_cond);
     }
-  }
+    else { /* status.MPI_TAG == DONE_EATING */
+      if( status.MPI_SOURCE == left_neighbor )
+	left_finished = 1;
+      else
+	right_finished = 1;
+      pthread_cond_broadcast(&state_cond);
+    }
 
-  pthread_mutex_unlock(&state_mutex);
+    pthread_mutex_unlock(&state_mutex);
+  }
 }
 
 
