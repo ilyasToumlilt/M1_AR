@@ -64,8 +64,7 @@ pthread_cond_t  state_cond  = PTHREAD_COND_INITIALIZER;
 int left_neighbor;  /* id du voisins gauche */
 int right_neighbor; /* id du voisins droit  */
 
-int left_finished;  /* 1: le voisin gauche a fini de manger, 0: sinon */
-int right_finished; /* 1: le voisin droit a fini de manger , 0: sinon */
+int finished_counter; /* nombre de process qu'ont fini de manger */
 
 int main(int argc, char** argv)
 {
@@ -114,7 +113,7 @@ void init_philosopher()
   right_neighbor = ( p.id + 1 ) % p.nb_philos;
 
   /* initialement mes voisins n'ont pas encore fini */
-  left_finished = right_finished = 0;
+  finished_counter = 0;
 
   #ifdef VERBOSE
   printf("DEBUG: PHILO_%d initialized, neighbors: (%d,%d)\n", p.id,
@@ -194,27 +193,29 @@ void wannaLeave()
   #endif
   
   /* messages sous forme d'entiers encore */
-  int buf = 0;
+  int buf = 0, i;
   MPI_Status status;
 
   /* je n'ai plus besoin des baguettes dont j'avais possession */
   pthread_mutex_lock(&state_mutex);
-  if( !left_finished && left_flag ){
+  if( /*!left_finished &&*/ left_flag ){
     MPI_Send(&buf, 1, MPI_INT, left_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
     left_flag = 0;
   }
-  if( !right_finished && right_flag ){
+  if( /*!right_finished &&*/ right_flag ){
     MPI_Send(&buf, 1, MPI_INT, right_neighbor, CHOPSTIK_YOURS, MPI_COMM_WORLD);
     right_flag = 0;
   }
   
   /* le philo commence par avertir ses voisins qu'il a fini de manger 
      Remarque, le tag utilisé est différent */
-  MPI_Send(&buf, 1, MPI_INT, left_neighbor, DONE_EATING, MPI_COMM_WORLD);
-  MPI_Send(&buf, 1, MPI_INT, right_neighbor, DONE_EATING, MPI_COMM_WORLD);
+  for( i=0; i<p.nb_philos; i++)
+    if( i != p.id )
+      MPI_Send(&buf, 1, MPI_INT, i, DONE_EATING, MPI_COMM_WORLD);
   
-  /* il doit ensuite attendre que ses voisins se soient terminés */
-  while( !left_finished || !right_finished )
+  /* il doit ensuite attendre gentillement que ses voisins se soient terminés */
+  finished_counter++;
+  while( finished_counter < p.nb_philos )
     pthread_cond_wait(&state_cond, &state_mutex);
   
   pthread_mutex_unlock(&state_mutex);
@@ -297,10 +298,7 @@ void* messageHandler(void* args)
       pthread_cond_broadcast(&state_cond);
     }
     else { /* status.MPI_TAG == DONE_EATING */
-      if( status.MPI_SOURCE == left_neighbor )
-	left_finished = 1;
-      else
-	right_finished = 1;
+      finished_counter++;
       pthread_cond_broadcast(&state_cond);
     }
 
